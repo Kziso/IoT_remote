@@ -13,8 +13,8 @@
 #include <ArduinoJson.h>       // ArduinoJson 7.x 推奨
 
 // ===== WiFi =====
-const char* WIFI_SSID = "YOUR_SSID";
-const char* WIFI_PASS = "YOUR_PASSWORD";
+const char* WIFI_SSID = "S413-iso-g";
+const char* WIFI_PASS = "icMU3aQaavPz6Qp2CCxa";
 
 // ===== PH/EN ピン割り当て（必要に応じて変更） =====
 // Atom LITE 外部ピンの例: 19, 22, 23, 25, 26, 32, 33 など
@@ -23,12 +23,12 @@ const int L_PHASE = 22;  // 方向
 const int L_EN    = 19;  // PWM
 // 右モーター
 const int R_PHASE = 23;  // 方向
-const int R_EN    = 25;  // PWM
+const int R_EN    = 33;  // PWM
 
 // ===== PWM 設定（ESP32 v3系では analogWrite* を推奨） =====
 const int PWM_RES_BITS = 10;             // 0..1023
 const int PWM_MAX      = (1 << PWM_RES_BITS) - 1;
-const int PWM_FREQ_HZ  = 20000;          // 20 kHz（モーター用に聞こえづらい帯域）
+const int PWM_FREQ_HZ  = 10000;          // 20 kHz（モーター用に聞こえづらい帯域）
 
 // ===== アプリ状態 =====
 WebSocketsServer ws(81);
@@ -54,7 +54,7 @@ void applyMotorPHEN(int phasePin, int enPin, float val) {
   }
   bool forward = (val > 0);
   digitalWrite(phasePin, forward ? HIGH : LOW);
-  int duty = (int)roundf(fabs(val) * PWM_MAX);
+  int duty = (int)roundf(fabs(val) * PWM_MAX * 0.5);
   analogWrite(enPin, clampi(duty, 0, PWM_MAX));
 }
 
@@ -142,7 +142,10 @@ void setup() {
   pinMode(R_EN, OUTPUT);
   digitalWrite(L_PHASE, LOW);
   digitalWrite(R_PHASE, LOW);
-  analogWriteResolution(PWM_RES_BITS);
+
+  // PWM 設定 (ESP32 v3 系)
+  analogWriteResolution(L_EN, PWM_RES_BITS);
+  analogWriteResolution(R_EN, PWM_RES_BITS);
   analogWriteFrequency(L_EN, PWM_FREQ_HZ);
   analogWriteFrequency(R_EN, PWM_FREQ_HZ);
   analogWrite(L_EN, 0);
@@ -150,6 +153,7 @@ void setup() {
 
   // WiFi
   WiFi.mode(WIFI_STA);
+  WiFi.setSleep(false);   // ★ 省電力スリープOFF
   WiFi.begin(WIFI_SSID, WIFI_PASS);
   Serial.printf("Connecting to WiFi SSID: %s", WIFI_SSID);
   while (WiFi.status() != WL_CONNECTED) { delay(350); Serial.print("."); }
@@ -159,6 +163,7 @@ void setup() {
   ws.begin();
   ws.onEvent(onWsEvent);
   Serial.println("WebSocket server started on :81");
+
 }
 
 void loop() {
@@ -181,4 +186,6 @@ void loop() {
     String out; serializeJson(hb, out);
     ws.broadcastTXT(out);
   }
+
+  delay(1); // ★ 内部処理にCPUを譲る
 }
