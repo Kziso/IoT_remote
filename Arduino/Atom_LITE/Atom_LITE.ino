@@ -9,6 +9,7 @@
 //   {"ok":true,"ts":123456,"L":0.75,"R":-0.40,"estop":false}
 
 #include <Arduino.h>
+#include "config_pins.h"   // Hardware mapping lives here
 #include "motor.h"
 #include "net.h"
 #include "ws.h"
@@ -17,21 +18,22 @@ void setup() {
   Serial.begin(115200);
   delay(200);
 
-  motorInit();
+  motorInit(L_PHASE, L_EN, R_PHASE, R_EN, PWM_RES_BITS, PWM_FREQ_HZ);
   wifiConnect();
-  wsBegin();
+  WS().begin();
 }
 
 void loop() {
-  wsLoop();
+  WS().loop();
 
-  if (app.estop) {
+  const AppState& wsState = WS().state();  // WebSocket-side application state
+  if (wsState.estop) {
     stopAll();
   } else {
-    applyMotorPHEN(L_PHASE, L_EN, app.L_cmd);
-    applyMotorPHEN(R_PHASE, R_EN, app.R_cmd);
+    // Apply motor outputs using configured pins (hidden in motor module)
+    applyMotors(wsState.L_cmd, wsState.R_cmd);
   }
 
-  wsMaybeHeartbeat();
+  WS().maybeHeartbeat();
   delay(1); // yield CPU
 }
