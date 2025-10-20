@@ -16,16 +16,26 @@
 #include "ws.h"
 
 void setup() {
+  // Initialize M5Atom S3
   AtomS3.begin(true);
+  // Indicate startup
   AtomS3.dis.setBrightness(100);
+  // Red during init
   AtomS3.dis.drawpix(0xff0000);
   AtomS3.update();
+
   Serial.begin(115200);
   delay(200);
 
+  // Initialize motors
   motorInit(L_PHASE, L_EN, R_PHASE, R_EN, PWM_RES_BITS, PWM_FREQ_HZ);
+  // Initialize network
   wifiConnect();
+  // Initialize WebSocket server
   WS().begin();
+
+  // Indicate ready
+  // Green when ready
   AtomS3.dis.drawpix(0x00ff00);
   AtomS3.update();
 }
