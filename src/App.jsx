@@ -7,7 +7,7 @@ const POLL_HZ = 60;
 // WebSocket
 const WS_HZ = 30;        // 制御送信レート
 const DIFF_EPS = 0.02;   // 差分しきい値
-const FORCE_MS = 10;    // 差分がなくても再送する間隔（出力維持のため）
+const FORCE_MS = 100;    // 差分がなくても再送する間隔（出力維持のため）
 
 const clamp = (v, min, max) => Math.min(max, Math.max(min, v));
 const dz = v => (Math.abs(v) < DEADZONE ? 0 : v);

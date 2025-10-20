@@ -28,13 +28,19 @@ const int R_EN    = 33;  // PWM
 // ===== PWM 設定（ESP32 v3系では analogWrite* を推奨） =====
 const int PWM_RES_BITS = 10;             // 0..1023
 const int PWM_MAX      = (1 << PWM_RES_BITS) - 1;
-const int PWM_FREQ_HZ  = 10000;          // 20 kHz（モーター用に聞こえづらい帯域）
+const int PWM_FREQ_HZ  = 480;          // 20 kHz（モーター用に聞こえづらい帯域）
 
 // ===== アプリ状態 =====
 WebSocketsServer ws(81);
 volatile bool estop = false;
 float L_cmd = 0.0f;  // -1.0 .. +1.0
 float R_cmd = 0.0f;
+
+// 調整パラメータ
+const float DUTY_CAP = 0.80f;     // 上限 70%
+const float SLEW_PER_SEC = 3.3f;  // 1秒あたり±2.0まで変化（0→100%を0.5s）推奨: 1.2〜3.3
+uint32_t lastMs = 0;
+float L_out=0, R_out=0;
 
 unsigned long lastBeatMs = 0;
 const unsigned long HEARTBEAT_MS = 500;
@@ -54,7 +60,7 @@ void applyMotorPHEN(int phasePin, int enPin, float val) {
   }
   bool forward = (val > 0);
   digitalWrite(phasePin, forward ? HIGH : LOW);
-  int duty = (int)roundf(fabs(val) * PWM_MAX * 0.5);
+  int duty = (int)roundf(fabs(val) * PWM_MAX);
   analogWrite(enPin, clampi(duty, 0, PWM_MAX));
 }
 
@@ -173,8 +179,26 @@ void loop() {
   if (estop) {
     stopAll();
   } else {
-    applyMotorPHEN(L_PHASE, L_EN, L_cmd);
-    applyMotorPHEN(R_PHASE, R_EN, R_cmd);
+    uint32_t now = millis();
+    float dt = (lastMs==0)? 0.0f : (now - lastMs) / 1000.0f;
+    lastMs = now;
+
+    // 時間ベースのスルーレート
+    float maxStep = SLEW_PER_SEC * dt;                 // この周期で許す最大変化
+    auto slew = [&](float target, float current){
+      float diff = target - current;
+      if (diff >  maxStep) diff =  maxStep;
+      if (diff < -maxStep) diff = -maxStep;
+      return current + diff;
+    };
+
+    // ランプ＋キャップ
+    L_out = slew(constrain(L_cmd, -1, 1), L_out);
+    R_out = slew(constrain(R_cmd, -1, 1), R_out);
+    float L_applied = constrain(L_out, -DUTY_CAP, DUTY_CAP);
+    float R_applied = constrain(R_out, -DUTY_CAP, DUTY_CAP);
+    applyMotorPHEN(L_PHASE, L_EN, L_applied);
+    applyMotorPHEN(R_PHASE, R_EN, R_applied);
   }
 
   // 心拍（接続者全員へ）
