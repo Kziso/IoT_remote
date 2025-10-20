@@ -9,18 +9,25 @@
 //   {"ok":true,"ts":123456,"L":0.75,"R":-0.40,"estop":false}
 
 #include <Arduino.h>
+#include <M5AtomS3.h>
 #include "config_pins.h"   // Hardware mapping lives here
 #include "motor.h"
 #include "net.h"
 #include "ws.h"
 
 void setup() {
+  AtomS3.begin(true);
+  AtomS3.dis.setBrightness(100);
+  AtomS3.dis.drawpix(0xff0000);
+  AtomS3.update();
   Serial.begin(115200);
   delay(200);
 
   motorInit(L_PHASE, L_EN, R_PHASE, R_EN, PWM_RES_BITS, PWM_FREQ_HZ);
   wifiConnect();
   WS().begin();
+  AtomS3.dis.drawpix(0x00ff00);
+  AtomS3.update();
 }
 
 void loop() {
