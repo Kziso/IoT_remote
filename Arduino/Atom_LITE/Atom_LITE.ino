@@ -29,6 +29,7 @@ void setup() {
 
   // Initialize motors
   motorInit(L_PHASE, L_EN, R_PHASE, R_EN, PWM_RES_BITS, PWM_FREQ_HZ);
+  setMotorOutputScale(MOTOR_OUTPUT_SCALE);
   // Initialize network
   wifiConnect();
   // Initialize WebSocket server

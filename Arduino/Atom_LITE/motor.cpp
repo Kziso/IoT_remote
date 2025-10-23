@@ -7,6 +7,7 @@ static int g_r_en    = -1;
 static int g_pwmResBits = 8;
 static int g_pwmMax     = (1 << 8) - 1;
 static int g_pwmFreqHz  = 1000;
+static float g_pwmScale  = 0.5f;
 
 int clampi(int v, int lo, int hi) { return v < lo ? lo : (v > hi ? hi : v); }
 float clampf(float v, float lo, float hi) { return v < lo ? lo : (v > hi ? hi : v); }
@@ -38,6 +39,10 @@ void motorInit(int l_phase, int l_en, int r_phase, int r_en,
   analogWrite(g_r_en, 0);
 }
 
+void setMotorOutputScale(float scale) {
+  g_pwmScale = clampf(scale, 0.0f, 1.0f);
+}
+
 // val: -1..+1
 void applyMotorPHEN(int phasePin, int enPin, float val) {
   val = clampf(val, -1.0f, 1.0f);
@@ -49,7 +54,7 @@ void applyMotorPHEN(int phasePin, int enPin, float val) {
   }
   bool forward = (val > 0);
   digitalWrite(phasePin, forward ? HIGH : LOW);
-  int duty = (int)roundf(fabs(val) * g_pwmMax * 0.5f);
+  int duty = (int)roundf(fabs(val) * g_pwmMax * g_pwmScale);
   analogWrite(enPin, clampi(duty, 0, g_pwmMax));
 }
 
