@@ -18,7 +18,7 @@ static const int R_EN    = 33;  // right PWM
 // PWM settings
 static const int PWM_RES_BITS = 10;              // 0..1023
 static const int PWM_MAX      = (1 << PWM_RES_BITS) - 1;
-static const int PWM_FREQ_HZ  = 480;             // 480 Hz
+static const int PWM_FREQ_HZ  = 20000;             // 480 Hz
 
 // Scale motor duty cycle (0.0-1.0). 0.5 = 50% ceiling.
-static const float MOTOR_OUTPUT_SCALE = 0.9f;
+static const float MOTOR_OUTPUT_SCALE = 0.7f;
