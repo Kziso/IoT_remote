@@ -1,7 +1,7 @@
-# Web Controller (Visual Only)
+# Web Controller
 
 React + Vite + Tailwind + Framer Motion を利用したサンプルです。  
-WebSocket は未実装（後から追加できます）。
+
 
 ## セットアップ
 ```bash
