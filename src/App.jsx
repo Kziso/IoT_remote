@@ -25,7 +25,7 @@ export default function DualMotorWS() {
   const [gpConnected, setGpConnected] = useState(false);
 
   // WebSocket 状態
-  const [wsUrl, setWsUrl] = useState("ws://192.168.32.100:81/"); // ← ArduinoのIPに合わせて
+  const [wsUrl, setWsUrl] = useState("ws://192.168.10.11:81/"); // ← ArduinoのIPに合わせて
   const [wsState, setWsState] = useState("disconnected");       // disconnected|connecting|connected
   const wsRef = useRef(null);
   const lastSentRef = useRef({ L: 999, R: 999 });

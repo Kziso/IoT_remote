@@ -7,7 +7,7 @@ static int g_r_en    = -1;
 static int g_pwmResBits = 8;
 static int g_pwmMax     = (1 << 8) - 1;
 static int g_pwmFreqHz  = 1000;
-static float g_pwmScale  = 0.5f;
+static float g_pwmScale  = 0.7f;
 
 int clampi(int v, int lo, int hi) { return v < lo ? lo : (v > hi ? hi : v); }
 float clampf(float v, float lo, float hi) { return v < lo ? lo : (v > hi ? hi : v); }
