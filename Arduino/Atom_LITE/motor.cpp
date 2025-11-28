@@ -6,8 +6,8 @@ static int g_r_phase = -1;
 static int g_r_en    = -1;
 static int g_pwmResBits = 10;
 static int g_pwmMax     = (1 << 10) - 1;
-static int g_pwmFreqHz  = 480;
-static float g_pwmScale  = 0.5f;
+static int g_pwmFreqHz  = 20000;
+static float g_pwmScale  = 0.7f;
 
 int clampi(int v, int lo, int hi) { return v < lo ? lo : (v > hi ? hi : v); }
 float clampf(float v, float lo, float hi) { return v < lo ? lo : (v > hi ? hi : v); }

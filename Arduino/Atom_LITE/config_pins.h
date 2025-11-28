@@ -21,4 +21,4 @@ static const int PWM_MAX      = (1 << PWM_RES_BITS) - 1;
 static const int PWM_FREQ_HZ  = 20000;             // 20000 Hz
 
 // Scale motor duty cycle (0.0-1.0). 0.5 = 50% ceiling.
-static const float MOTOR_OUTPUT_SCALE = 0.7f;
+static const float MOTOR_OUTPUT_SCALE = 0.9f;
