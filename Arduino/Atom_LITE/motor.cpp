@@ -8,6 +8,7 @@ static int g_pwmResBits = 10;
 static int g_pwmMax     = (1 << 10) - 1;
 static int g_pwmFreqHz  = 20000;
 static float g_pwmScale  = 0.7f;
+static bool g_startupDone = false;
 
 int clampi(int v, int lo, int hi) { return v < lo ? lo : (v > hi ? hi : v); }
 float clampf(float v, float lo, float hi) { return v < lo ? lo : (v > hi ? hi : v); }
@@ -66,4 +67,51 @@ void stopAll() {
 void applyMotors(float left, float right) {
   if (g_l_phase >= 0 && g_l_en >= 0) applyMotorPHEN(g_l_phase, g_l_en, left);
   if (g_r_phase >= 0 && g_r_en >= 0) applyMotorPHEN(g_r_phase, g_r_en, right);
+}
+
+void startMotorsIfNeeded(float left, float right) {
+  // If both outputs are (near) zero, treat as stopped and reset startup flag
+  const float stopThreshold = 0.02f;
+  if (fabs(left) < stopThreshold && fabs(right) < stopThreshold) {
+    applyMotors(left, right);
+    g_startupDone = false;
+    return;
+  }
+
+  // Already running normally
+  if (g_startupDone) {
+    applyMotors(left, right);
+    return;
+  }
+
+  // If pins are not initialized, fall back to normal apply
+  if (g_l_phase < 0 || g_l_en < 0 || g_r_phase < 0 || g_r_en < 0) {
+    applyMotors(left, right);
+    g_startupDone = true;
+    return;
+  }
+
+  const float step1 = 0.3f;
+  const float step2 = 0.6f;
+  const int stepDelayMs = 30;   // Delay between ramp steps per motor
+  const int betweenMotorsMs = 60; // Delay before starting the second motor
+
+  // Soft-start left motor
+  applyMotorPHEN(g_l_phase, g_l_en, left * step1);
+  applyMotorPHEN(g_r_phase, g_r_en, 0.0f); // keep right stopped
+  delay(stepDelayMs);
+  applyMotorPHEN(g_l_phase, g_l_en, left * step2);
+  delay(stepDelayMs);
+  applyMotorPHEN(g_l_phase, g_l_en, left);
+  Serial.printf("Left start\n");
+  delay(betweenMotorsMs);
+
+  // Soft-start right motor
+  applyMotorPHEN(g_r_phase, g_r_en, right * step1);
+  delay(stepDelayMs);
+  applyMotorPHEN(g_r_phase, g_r_en, right * step2);
+  delay(stepDelayMs);
+  applyMotorPHEN(g_r_phase, g_r_en, right);
+  Serial.printf("Right start\n");
+  g_startupDone = true;
 }

@@ -17,3 +17,6 @@ void stopAll();
 
 // Convenience: apply both motors using configured pins
 void applyMotors(float left, float right);
+
+// Start-up helper: stagger initial spin-up to avoid voltage dip
+void startMotorsIfNeeded(float left, float right);

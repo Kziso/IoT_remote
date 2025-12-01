@@ -49,7 +49,7 @@ void loop() {
     stopAll();
   } else {
     // Apply motor outputs using configured pins (hidden in motor module)
-    applyMotors(wsState.L_cmd, wsState.R_cmd);
+    startMotorsIfNeeded(wsState.L_cmd, wsState.R_cmd);
   }
 
   WS().maybeHeartbeat();
