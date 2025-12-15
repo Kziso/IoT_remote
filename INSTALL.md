@@ -22,7 +22,8 @@ SSH で Pi にログインし、以下を実行します。`/var/www/html` を�
 ```bash
 sudo apt update
 sudo apt install -y nginx
-sudo mkdir -p /var/www/html/m /var/www/html/pc
+sudo mkdir -p /var/www/html/m /var/www/html/pc 
+mkdir -p ~/work/temp
 sudo chown -R $USER:$USER /var/www/html
 ```
 
@@ -61,28 +62,16 @@ sudo systemctl reload nginx
 
 ## 3. Windows → Raspberry Pi へのデプロイ
 
-### 3.1 PowerShell スクリプトで自動化（推奨）
+1. Windows
+   
+   `scp ui4mobile.tgz iso@web-controller.local:~/work/temp/`  
+   `scp ui4pc.tgz iso@web-controller.local:~/work/temp/`
 
-リポジトリの `scripts/deploy-tgz.ps1` を利用します。`ui4mobile.tgz` と `ui4pc.tgz` を Pi へ送って `/var/www/html/m`／`/var/www/html/pc` に展開します。
-
-```powershell
-pwsh -File scripts/deploy-tgz.ps1 -PiHost 192.168.1.50 -PiUser pi
-```
-
-実行例:
-
-任意のパラメータ（PiHost / PiUser / DeployRoot）は引数で上書きできます。
-
-### 3.2 手動で行う場合
-
-1. `scp ui4mobile.tgz pi@192.168.1.50:/var/www/html/`  
-   `scp ui4pc.tgz pi@192.168.1.50:/var/www/html/`
 2. Pi に SSH し、以下を実行:
    ```bash
-   cd /var/www/html
-   sudo mkdir -p m pc
-   sudo tar -xzf ui4mobile.tgz -C m --strip-components=1
-   sudo tar -xzf ui4pc.tgz -C pc --strip-components=1
+   cd work/temp/
+   sudo tar -xzf ui4mobile.tgz -C /var/www/html/m --strip-components=1
+   sudo tar -xzf ui4pc.tgz -C /var/www/html/pc --strip-components=1
    rm ui4mobile.tgz ui4pc.tgz
    ```
 
