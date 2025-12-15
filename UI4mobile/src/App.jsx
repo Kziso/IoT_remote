@@ -7,16 +7,36 @@ const DISPLAY_RANGE = 110; // px: how far the knob can travel up/down from cente
 const WS_HZ = 30;
 const DIFF_EPS = 0.02;
 const FORCE_MS = 120;
+const WS_URL_STORAGE_KEY = "touchDual.wsUrl";
 
 export default function App() {
   const [left, setLeft] = useState(0);   // -1..+1
   const [right, setRight] = useState(0); // -1..+1
   const [zoom, setZoom] = useState(0.9);   // 0.8..1.3
-  const [wsUrl, setWsUrl] = useState(wsConfig?.wsUrl || "ws://192.168.0.10:81/");
+  const defaultWsUrl = wsConfig?.wsUrl || "ws://192.168.0.10:81/";
+  const [wsUrl, setWsUrl] = useState(() => {
+    if (typeof window !== "undefined") {
+      try {
+        return localStorage.getItem(WS_URL_STORAGE_KEY) || defaultWsUrl;
+      } catch {
+        // ignore storage errors (e.g. private mode)
+      }
+    }
+    return defaultWsUrl;
+  });
   const [wsState, setWsState] = useState("disconnected"); // disconnected|connecting|connected
   const wsRef = useRef(null);
   const lastSentRef = useRef({ L: 999, R: 999 });
   const lastForceAtRef = useRef(0);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      localStorage.setItem(WS_URL_STORAGE_KEY, wsUrl);
+    } catch (err) {
+      console.warn("Failed to persist wsUrl", err);
+    }
+  }, [wsUrl]);
 
   const connectWS = () => {
     try {

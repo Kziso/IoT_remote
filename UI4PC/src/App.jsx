@@ -9,6 +9,7 @@ const POLL_HZ = 60;
 const WS_HZ = 30;        // 制御送信レート
 const DIFF_EPS = 0.02;   // 差分しきい値
 const FORCE_MS = 10;    // 差分がなくても再送する間隔（出力維持のため）
+const WS_URL_STORAGE_KEY = "dualMotor.wsUrl"; // 端末ごとに保存するWS URLキー
 
 const clamp = (v, min, max) => Math.min(max, Math.max(min, v));
 const dz = v => (Math.abs(v) < DEADZONE ? 0 : v);
@@ -25,12 +26,32 @@ export default function DualMotorWS() {
   const [gamepadId, setGamepadId] = useState("(none)");
   const [gpConnected, setGpConnected] = useState(false);
 
-  // WebSocket 状態
-  const [wsUrl, setWsUrl] = useState(wsConfig?.wsUrl || "ws://192.168.10.11:81/"); // 初期値はwsConfig.jsonから
+  const initialWsUrl = wsConfig?.wsUrl || "ws://192.168.10.11:81/";
+  // WebSocket 状態（初回のみlocalStorageの値を優先）
+  const [wsUrl, setWsUrl] = useState(() => {
+    if (typeof window !== "undefined") {
+      try {
+        return localStorage.getItem(WS_URL_STORAGE_KEY) || initialWsUrl;
+      } catch (_) {
+        // ignore storage access errors (e.g. Safari private mode)
+      }
+    }
+    return initialWsUrl;
+  });
   const [wsState, setWsState] = useState("disconnected");       // disconnected|connecting|connected
   const wsRef = useRef(null);
   const lastSentRef = useRef({ L: 999, R: 999 });
   const lastForceAtRef = useRef(0);
+
+  // wsUrlが変わったら端末に保存しておく
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      localStorage.setItem(WS_URL_STORAGE_KEY, wsUrl);
+    } catch (err) {
+      console.warn("Failed to persist wsUrl", err);
+    }
+  }, [wsUrl]);
 
   // ログ
   const [log, setLog] = useState([]);
