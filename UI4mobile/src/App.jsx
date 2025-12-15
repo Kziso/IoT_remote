@@ -1,5 +1,4 @@
 import React, { useEffect, useRef, useState } from "react";
-import { motion } from "framer-motion";
 import wsConfig from "./wsConfig.json";
 
 const clamp = (v, min, max) => Math.min(max, Math.max(min, v));
@@ -7,17 +6,35 @@ const DISPLAY_RANGE = 110; // px: how far the knob can travel up/down from cente
 const WS_HZ = 30;
 const DIFF_EPS = 0.02;
 const FORCE_MS = 120;
-const WS_URL_STORAGE_KEY = "touchDual.wsUrl";
+const STORAGE_KEYS = {
+  wsUrl: "touchDual.wsUrl",
+  zoom: "touchDual.zoom",
+  spread: "touchDual.spread",
+};
+const PANEL_SPREAD_MAX = 90; // px shift when spread slider is at max
 
 export default function App() {
   const [left, setLeft] = useState(0);   // -1..+1
   const [right, setRight] = useState(0); // -1..+1
-  const [zoom, setZoom] = useState(0.9);   // 0.8..1.3
+  const [zoom, setZoom] = useState(() => {
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem(STORAGE_KEYS.zoom);
+      if (stored != null) return Number(stored);
+    }
+    return 0.9;
+  });   // 0.8..1.3
+  const [spread, setSpread] = useState(() => {
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem(STORAGE_KEYS.spread);
+      if (stored != null) return Number(stored);
+    }
+    return 0;
+  }); // -100..100 (negative = closer, positive = wider)
   const defaultWsUrl = wsConfig?.wsUrl || "ws://192.168.0.10:81/";
   const [wsUrl, setWsUrl] = useState(() => {
     if (typeof window !== "undefined") {
       try {
-        return localStorage.getItem(WS_URL_STORAGE_KEY) || defaultWsUrl;
+        return localStorage.getItem(STORAGE_KEYS.wsUrl) || defaultWsUrl;
       } catch {
         // ignore storage errors (e.g. private mode)
       }
@@ -32,11 +49,27 @@ export default function App() {
   useEffect(() => {
     if (typeof window === "undefined") return;
     try {
-      localStorage.setItem(WS_URL_STORAGE_KEY, wsUrl);
+      localStorage.setItem(STORAGE_KEYS.wsUrl, wsUrl);
     } catch (err) {
       console.warn("Failed to persist wsUrl", err);
     }
   }, [wsUrl]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEYS.zoom, String(zoom));
+    } catch (err) {
+      console.warn("Failed to persist zoom", err);
+    }
+  }, [zoom]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEYS.spread, String(spread));
+    } catch (err) {
+      console.warn("Failed to persist spread", err);
+    }
+  }, [spread]);
 
   const connectWS = () => {
     try {
@@ -92,10 +125,14 @@ export default function App() {
     return () => clearInterval(iv);
   }, []);
 
+  const panelOffsetPx = (spread / 100) * PANEL_SPREAD_MAX;
+  const leftPanelStyle = { transform: `translateX(${-panelOffsetPx}px)` };
+  const rightPanelStyle = { transform: `translateX(${panelOffsetPx}px)` };
+
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col items-center px-3 py-5 overflow-x-hidden">
       <header className="w-full max-w-4xl flex flex-col gap-3 mb-4">
-        <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center justify-between gap-3 flex-wrap">
           <div>
             <p className="text-[10px] tracking-[0.32em] text-cyan-300 font-semibold uppercase">Touch Pad</p>
             <h1 className="text-2xl font-bold">Dual Vertical Sticks</h1>
@@ -103,18 +140,35 @@ export default function App() {
               丸いトップを指でつまんで上下へ。離すと中央へ戻ります。
             </p>
           </div>
-          <div className="flex items-center gap-2 text-xs text-slate-300">
-            <span className="tracking-wide text-slate-400">Zoom</span>
-            <input
-              type="range"
-              min={80}
-              max={130}
-              step={1}
-              value={Math.round(zoom * 100)}
-              onChange={(e) => setZoom(Number(e.target.value) / 100)}
-              className="w-28 accent-cyan-400"
-            />
-            <span className="w-10 text-right text-[11px] text-slate-400">{Math.round(zoom * 100)}%</span>
+          <div className="flex flex-col items-end gap-2 text-xs text-slate-300">
+            <div className="flex items-center gap-2">
+              <span className="tracking-wide text-slate-400">Zoom</span>
+              <input
+                type="range"
+                min={80}
+                max={130}
+                step={1}
+                value={Math.round(zoom * 100)}
+                onChange={(e) => setZoom(Number(e.target.value) / 100)}
+                className="w-28 accent-cyan-400"
+              />
+              <span className="w-10 text-right text-[11px] text-slate-400">{Math.round(zoom * 100)}%</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="tracking-wide text-slate-400">Spread</span>
+              <input
+                type="range"
+                min={-100}
+                max={100}
+                step={1}
+                value={spread}
+                onChange={(e) => setSpread(Number(e.target.value))}
+                className="w-28 accent-orange-400"
+              />
+              <span className="w-12 text-right text-[11px] text-slate-400">
+                {spread > 0 ? `+${spread}` : spread}%
+              </span>
+            </div>
           </div>
         </div>
 
@@ -152,18 +206,22 @@ export default function App() {
         style={{ transform: `scale(${zoom})`, transformOrigin: "top center" }}
       >
         <div className="grid grid-cols-2 gap-4 w-full max-w-3xl sm:max-w-2xl">
-          <KnobPanel
-            label="LEFT"
-            value={left}
-            onChange={setLeft}
-            accent="from-cyan-400/70 via-teal-500/40 to-cyan-300/20"
-          />
-          <KnobPanel
-            label="RIGHT"
-            value={right}
-            onChange={setRight}
-            accent="from-amber-400/70 via-orange-500/40 to-pink-400/20"
-          />
+          <div style={leftPanelStyle} className="transition-transform duration-150 ease-out">
+            <KnobPanel
+              label="LEFT"
+              value={left}
+              onChange={setLeft}
+              accent="from-cyan-400/70 via-teal-500/40 to-cyan-300/20"
+            />
+          </div>
+          <div style={rightPanelStyle} className="transition-transform duration-150 ease-out">
+            <KnobPanel
+              label="RIGHT"
+              value={right}
+              onChange={setRight}
+              accent="from-amber-400/70 via-orange-500/40 to-pink-400/20"
+            />
+          </div>
         </div>
       </div>
 
@@ -235,26 +293,28 @@ function TouchSlider({ value, onChange }) {
         <div className="absolute left-1/2 -translate-x-1/2 top-1/2 -mt-3 text-[11px] text-cyan-300">0</div>
       </div>
 
-      <motion.div
-        className="absolute left-1/4 -translate-x-1/4 top-1/4 -translate-y-1/4 rounded-full"
-        style={{
-          width: "104px",
-          height: "104px",
-          background: "radial-gradient(circle at 50% 50%, rgba(59,130,246,0.9), rgba(59,130,246,0.65))",
-          border: "2px solid rgba(255,255,255,0.25)",
-          touchAction: "none",
-        }}
-        animate={{ y: knobY }}
-        transition={{ type: "spring", stiffness: 260, damping: 28 }}
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={releasePointer}
-        onPointerCancel={releasePointer}
-      >
-        <div className="w-full h-full rounded-full flex items-center justify-center text-sm font-semibold text-white">
-          {Math.round(value * 100)}%
+      <div className="absolute inset-0 flex items-center justify-center">
+        <div
+          className="rounded-full"
+          style={{
+            width: "104px",
+            height: "104px",
+            background: "radial-gradient(circle at 50% 50%, rgba(59,130,246,0.9), rgba(59,130,246,0.65))",
+            border: "2px solid rgba(255,255,255,0.25)",
+            touchAction: "none",
+            transform: `translateY(${knobY}px)`,
+            transition: "transform 40ms linear",
+          }}
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={releasePointer}
+          onPointerCancel={releasePointer}
+        >
+          <div className="w-full h-full rounded-full flex items-center justify-center text-sm font-semibold text-white">
+            {Math.round(value * 100)}%
+          </div>
         </div>
-      </motion.div>
+      </div>
     </div>
   );
 }
