@@ -1,23 +1,20 @@
 # IoT Remote UI インストール手順
 
 Raspberry Pi に nginx を入れて、PC / Mobile 向け UI を `/pc/` `/m/` で公開するための簡易手順です。  
-開発マシンは Windows を想定し、`ui4mobile.tgz` と `ui4pc.tgz`（それぞれ `dist` を固めたもの）がリポジトリ直下にある前提です。
+開発マシンは Windows を想定し、`ui4mobile.tgz` と `ui4pc.tgz`　が手元にある前提。
 
 ---
 
 ## 1. 前提条件
 
-- Raspberry Pi OS Bullseye 以降、SSH ログインできること
-- Pi の IP アドレス、ユーザー（例: `pi`）/パスワードを把握していること
-- Windows には PowerShell 7、OpenSSH クライアント、`scp`/`ssh` が利用可能であること
-- Vite の `base` は `UI4mobile` → `/m/`、`UI4PC` → `/pc/` に設定済み
+- Raspberry Pi にSSH ログインできること
+- Raspberrypiに設定したhost名、ユーザ名を、PWを思い出しておいてください。
 
 ---
 
 ## 2. Raspberry Pi 側セットアップ
 
-SSH で Pi にログインし、以下を実行します。`/var/www/html` をそのまま利用します。  
-（リポジトリ内の `scripts/pi-setup.sh` をコピーして `bash pi-setup.sh` としても実行可能です）
+SSH で RaspberryPi にログインし、以下を実行します。
 
 ```bash
 sudo apt update
@@ -62,16 +59,19 @@ sudo systemctl reload nginx
 
 ## 3. Windows → Raspberry Pi へのデプロイ
 
-1. Windows
-   
+1. WindowsのPowershellで操作
+   ui4mobile.tgzと、ui4pc.tgzの2つのファイルをRaspberryPiに入れる。
+   2つのファイルがあるディレクトリに、PowerShellで移動して、以下のコマンドを実行する。
+   ユーザ名　isoとホスト名 web-cotrollerのところは、自身がアクセスするRaspberrypiに併せて修正すること。
+
    `scp ui4mobile.tgz iso@web-controller.local:~/work/temp/`  
    `scp ui4pc.tgz iso@web-controller.local:~/work/temp/`
 
 2. Pi に SSH し、以下を実行:
    ```bash
    cd work/temp/
-   sudo tar -xzf ui4mobile.tgz -C /var/www/html/m --strip-components=1
-   sudo tar -xzf ui4pc.tgz -C /var/www/html/pc --strip-components=1
+   sudo tar -xzf ui4mobile.tgz -C /var/www/html/m 
+   sudo tar -xzf ui4pc.tgz -C /var/www/html/pc 
    rm ui4mobile.tgz ui4pc.tgz
    ```
 
