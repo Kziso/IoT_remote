@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
+import wsConfig from "./wsConfig.json";
 
 const DEADZONE = 0.12;
 const POLL_HZ = 60;
@@ -25,7 +26,7 @@ export default function DualMotorWS() {
   const [gpConnected, setGpConnected] = useState(false);
 
   // WebSocket 状態
-  const [wsUrl, setWsUrl] = useState("ws://192.168.10.11:81/"); // ← ArduinoのIPに合わせて
+  const [wsUrl, setWsUrl] = useState(wsConfig?.wsUrl || "ws://192.168.10.11:81/"); // 初期値はwsConfig.jsonから
   const [wsState, setWsState] = useState("disconnected");       // disconnected|connecting|connected
   const wsRef = useRef(null);
   const lastSentRef = useRef({ L: 999, R: 999 });
